@@ -349,9 +349,9 @@ class DNA:
             if precheck and not precheck():
                 abort(403)
 
-            service = self.get_service_info(service)
+            service, service_name = self.get_service_info(service), service
             if not service and fallback:
-                return fallback(service, log)
+                return fallback(service_name, log)
             if not service:
                 abort(404)
 

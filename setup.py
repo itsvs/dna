@@ -5,7 +5,7 @@ with open("README.md") as f:
 
 setup(
     name="docker-dna",
-    version="0.4.1",
+    version="0.4.2",
     author="Vanshaj Singhania",
     author_email="vanshaj@berkeley.edu",
     long_description=readme,
