@@ -31,10 +31,13 @@ class DNA:
         self.internal_logger.open()
 
         self.print = self.internal_logger.write
+        self.print(f"Starting DNA...")
         self.socat = SocatHelper(self)
 
         self.propagate_services()
         self.socat.bind_all(self.services)
+
+        self.print(f"Successfully started DNA instance in {self.path}.")
 
     def __del__(self):
         self.internal_logger.close()
