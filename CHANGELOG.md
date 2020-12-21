@@ -2,6 +2,12 @@
 
 <!-- skip title -->
 
+## v0.4.4
+
+*December 21, 2020*
+
+Update module to include descriptions and links.
+
 ## v0.4.3r1
 
 *December 21, 2020*

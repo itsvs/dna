@@ -2,7 +2,7 @@
 
 <!-- begin readme -->
 
-See this project on [GitHub](https://github.com/itsvs/dna). Current version is 0.3.0
+See this project on [GitHub](https://github.com/itsvs/dna). Current version is 0.4.4
 ([PyPI](https://pypi.org/project/docker-dna/)).
 
 ## Motivation

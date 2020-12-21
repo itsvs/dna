@@ -3,11 +3,15 @@ from setuptools import setup, find_packages
 with open("README.md") as f:
     readme = f.read()
 
+description = "Collection of utilities that simplify the process of deploying webapps inside containers."
+
 setup(
     name="docker-dna",
-    version="0.4.3r1",
+    version="0.4.4",
     author="Vanshaj Singhania",
     author_email="vanshaj@berkeley.edu",
+    description=description,
+    url="https://dna.vanshaj.dev/",
     long_description=readme,
     long_description_content_type="text/markdown",
     license="Apache License 2.0",
