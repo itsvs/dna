@@ -368,5 +368,5 @@ class DNA:
                 return "<br />".join(self.docker_logs(service.name).split("\n"))
 
             if fallback:
-                return fallback(service, log)
+                return fallback(service.name, log)
             abort(404)

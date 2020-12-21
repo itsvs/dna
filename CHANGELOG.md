@@ -2,6 +2,12 @@
 
 <!-- skip title -->
 
+## v0.4.3r1
+
+*December 21, 2020*
+
+Bug fix: when using the fallback logger, *always* pass in the name of the requested, not only when the service isn't registered.
+
 ## v0.4.3
 
 *December 21, 2020*
