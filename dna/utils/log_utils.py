@@ -48,7 +48,7 @@ class Logger:
     :type append: bool
     """
 
-    def __init__(self, path, append):
+    def __init__(self, path, append=False):
         self.path = path
         self.append = append
 

@@ -2,6 +2,18 @@
 
 <!-- skip title -->
 
+## v0.4.7
+
+*December 21, 2020*
+
+* Provide a default value to `dna.utils.Logger.append`
+
+## v0.4.6
+
+*December 21, 2020*
+
+* Add a flag to `dna.utils.Logger` to append instead of overwrite
+
 ## v0.4.5
 
 *December 21, 2020*
