@@ -163,6 +163,10 @@ class DNA:
         :type domain: str
         """
         self.print("Doing nginx deploy...")
+        if os.path.exists(f"{self.confs}/{domain}.conf"):
+            self.print(f"An nginx config for {domain} already exists!")
+            return
+
         socket = f"{self.socks}/{service}.sock"
         with open(f"{self.confs}/{domain}.conf", "w") as out:
             out.write(
@@ -171,23 +175,26 @@ class DNA:
                 )
             )
         out = utils.sh("nginx", "-s", "reload", stream=False)
-        self.print(out.stdout)
+        self.print(out)
 
         self.print("Installing or provisioning certificate, as needed...")
-        for _ in range(5):
+        for _ in range(12):
             try:
                 cert = self.certbot.cert_else_false(domain)
                 if cert:
+                    self.print(f"Attaching an existing certificate that matches {domain}...")
                     self.certbot.attach_cert(cert, domain, logfile=self.internal_logger.file())
                 else:
+                    self.print("Provisioning a new certificate...")
                     self.certbot.run_bot([domain], logfile=self.internal_logger.file())
             except utils.LockError:
                 time.sleep(5)
                 continue
             
-            self.print(f"Done! Sucessfully proxied {domain} to {service}.")
+            self.print(f"Done! Sucessfully proxied https://{domain} to {service}.")
             return
-        self.print(f"Failed to acquire Certbot lock 5 times. Could not proxy {domain} to {service}.")
+        self.print(f"Failed to acquire Certbot lock 12 times. Could not secure {domain}.")
+        self.print(f"Done! Sucessfully proxied http://{domain} to {service}.")
         
 
     def _do_db_deploy(self, service, image, port):
@@ -203,7 +210,9 @@ class DNA:
         self.print("Doing database deploy...")
         if not self.db.get_service_by_name(service):
             self.db.create_service(service, image, port)
-        self.print("Done!")
+            self.print("Done!")
+        else:
+            self.print("Service already exists in database!")
 
     def run_deploy(self, service, image, port, **docker_options):
         """Deploys a service to a container, binds that container port to socat, saves

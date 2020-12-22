@@ -2,6 +2,12 @@
 
 <!-- skip title -->
 
+## v0.4.9
+
+*December 21, 2020*
+
+* Skip redundant deploy steps, such as when an nginx configuration already exists
+
 ## v0.4.8
 
 *December 21, 2020*

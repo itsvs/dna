@@ -128,8 +128,8 @@ class Docker:
         yield from self.api.build(decode=True, **options)
 
     def prune_images(self):
-        """Remove all images older than 10 days"""
-        self.client.images.prune({"until": "240h"})
+        """Remove all dangling images"""
+        self.client.images.prune()
 
     def container_exists(self, name):
         """Return whether the container called ``name`` exists
