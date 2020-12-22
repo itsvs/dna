@@ -2,6 +2,13 @@
 
 <!-- skip title -->
 
+## v0.5.0
+
+*December 22, 2020*
+
+* Add ability to force `certbot` to use wildcard certificates (or bust)
+* Modify README to use a PyPI badge instead of hardcoding the latest version
+
 ## v0.4.9
 
 *December 21, 2020*

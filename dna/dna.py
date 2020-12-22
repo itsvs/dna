@@ -154,13 +154,16 @@ class DNA:
 
         self.print(f"Done! Successfully deployed {image} as {service}.")
 
-    def _do_nginx_deploy(self, service, domain):
+    def _do_nginx_deploy(self, service, domain, force_wildcard=False):
         """Adds an nginx proxy from the ``domain`` to the ``service``
 
         :param service: the name of the service to point to
         :type service: str
         :param domain: the url to proxy
         :type domain: str
+        :param force_wildcard: forcibly use a wildcard SSL certificate only\
+            (defaults to ``False``)
+        :type force_wildcard: bool
         """
         self.print("Doing nginx deploy...")
         if os.path.exists(f"{self.confs}/{domain}.conf"):
@@ -177,14 +180,20 @@ class DNA:
         out = utils.sh("nginx", "-s", "reload", stream=False)
         self.print(out)
 
-        self.print("Installing or provisioning certificate, as needed...")
+        if force_wildcard:
+            self.print("Installing a wildcard certificate...")
+        else:
+            self.print("Installing or provisioning certificate, as needed...")
         for _ in range(12):
             try:
-                cert = self.certbot.cert_else_false(domain)
+                cert = self.certbot.cert_else_false(domain, force_wildcard)
                 if cert:
-                    self.print(f"Attaching an existing certificate that matches {domain}...")
+                    self.print(f"Found a matching certificate! Installing...")
                     self.certbot.attach_cert(cert, domain, logfile=self.internal_logger.file())
                 else:
+                    if force_wildcard:
+                        self.print("A wildcard certificate was forced but not found.")
+                        break
                     self.print("Provisioning a new certificate...")
                     self.certbot.run_bot([domain], logfile=self.internal_logger.file())
             except utils.LockError:
@@ -193,7 +202,7 @@ class DNA:
             
             self.print(f"Done! Sucessfully proxied https://{domain} to {service}.")
             return
-        self.print(f"Failed to acquire Certbot lock 12 times. Could not secure {domain}.")
+        self.print(f"Failed to secure {domain}.")
         self.print(f"Done! Sucessfully proxied http://{domain} to {service}.")
         
 
@@ -267,16 +276,19 @@ class DNA:
         """
         return self.db.get_service_by_name(service)
 
-    def add_domain(self, service, domain):
+    def add_domain(self, service, domain, force_wildcard=False):
         """Proxy ``domain`` to ``service``, if it is not already bound to another service
 
         :param service: the name of the service
         :type service: str
         :param domain: the url to proxy to the service front-end
         :type domain: str
+        :param force_wildcard: forcibly use a wildcard SSL certificate only\
+            (defaults to ``False``)
+        :type force_wildcard: bool
         """
         if self.db.add_domain_to_service(domain, service):
-            self._do_nginx_deploy(service, domain)
+            self._do_nginx_deploy(service, domain, force_wildcard)
         self.propagate_services()
 
     def delete_service(self, service):

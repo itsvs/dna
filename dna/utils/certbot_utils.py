@@ -47,16 +47,21 @@ class Certbot:
         """
         return list(self._cert_iter())
 
-    def cert_else_false(self, domain):
+    def cert_else_false(self, domain, force_wildcard=False):
         """Get a certificate matching ``domain`` if there is one, else ``False``
 
         :param domain: the domain to match
         :type domain: str
+        :param force_wildcard: forcibly search for a wildcard certificate only\
+            (defaults to ``False``)
+        :type force_wildcard: bool
 
         :return: the matching :class:`~certbot.interfaces.RenewableCert` if there\
             is one, otherwise ``False``
         """
         domains = [domain, ".".join(["*"] + domain.split(".")[1:])]
+        if force_wildcard:
+            domains = domains[1:]
         for cert in self._cert_iter():
             for d in domains:
                 if d in cert.names():

@@ -2,8 +2,11 @@
 
 <!-- begin readme -->
 
-See this project on [GitHub](https://github.com/itsvs/dna). Current version is 0.4.9
-([PyPI](https://pypi.org/project/docker-dna/)).
+[![PyPI Badge](https://img.shields.io/pypi/v/docker-dna.svg?style=flat)](https://pypi.org/project/docker-dna)
+![License Badge](https://img.shields.io/github/license/itsvs/dna?style=flat)
+
+See this project on [GitHub](https://github.com/itsvs/dna). Also available via
+[PyPI](https://pypi.org/project/docker-dna).
 
 ## Motivation
 
@@ -128,4 +131,4 @@ Guide coming soon, for now just use common sense! And the [GitHub Flow](https://
 
 ## License
 
-This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE.md) for more information.
+This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE) for more information.
