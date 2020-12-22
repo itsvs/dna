@@ -16,7 +16,7 @@ def sh(*args, stream=True, **kwargs):
         is ``True``, else the subprocess output as a completed string
     """
     if not stream:
-        return subprocess.run(args, capture_output=True).stdout.decode('utf-8')
+        return subprocess.run(args, capture_output=True).stdout.decode("utf-8")
 
     out = subprocess.Popen(
         args,

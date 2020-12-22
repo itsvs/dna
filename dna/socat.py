@@ -36,7 +36,7 @@ class SocatHelper:
         self.socks = dna.path + "/socks"
 
         self._setup()
-    
+
     def _fix_permissions(self, service, port):
         """Wait for the socket binding to complete, then make the
         socket visible to nginx
@@ -50,9 +50,7 @@ class SocatHelper:
         while not os.path.exists(path):
             time.sleep(1)
 
-        out = subprocess.run(
-            ["chmod", "666", path], capture_output=True
-        )
+        out = subprocess.run(["chmod", "666", path], capture_output=True)
         self.dna.print(out.stdout)
 
         self.dna.print(f"Bound {service}:{port} to {service}.sock.")
