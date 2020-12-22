@@ -3,6 +3,7 @@ from certbot.display import util as display_util
 from certbot._internal import cli, configuration, storage, reporter
 from certbot._internal.main import make_or_verify_needed_dirs
 from certbot._internal.plugins import disco as plugins_disco
+from certbot.errors import LockError
 import zope.component, sys
 
 

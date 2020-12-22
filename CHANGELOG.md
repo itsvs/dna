@@ -2,6 +2,12 @@
 
 <!-- skip title -->
 
+## v0.4.8
+
+*December 21, 2020*
+
+* Concurrency: if `certbot` fails, wait 5 seconds and try again up to 5 times
+
 ## v0.4.7
 
 *December 21, 2020*

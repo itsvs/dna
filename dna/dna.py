@@ -1,6 +1,7 @@
 import os, shutil, threading, subprocess
 import dna.utils as utils
 from dna.socat import SocatHelper
+import time
 
 
 class DNA:
@@ -169,16 +170,25 @@ class DNA:
                     domain, socket, logs_pre=f"{self.logs}/{service}-"
                 )
             )
-        out = subprocess.run(["nginx", "-s", "reload"], capture_output=True)
+        out = utils.sh("nginx", "-s", "reload", stream=False)
         self.print(out.stdout)
 
         self.print("Installing or provisioning certificate, as needed...")
-        cert = self.certbot.cert_else_false(domain)
-        if cert:
-            self.certbot.attach_cert(cert, domain, logfile=self.internal_logger.file())
-        else:
-            self.certbot.run_bot([domain], logfile=self.internal_logger.file())
-        self.print(f"Done! Sucessfully proxied {domain} to {service}.")
+        for _ in range(5):
+            try:
+                cert = self.certbot.cert_else_false(domain)
+                if cert:
+                    self.certbot.attach_cert(cert, domain, logfile=self.internal_logger.file())
+                else:
+                    self.certbot.run_bot([domain], logfile=self.internal_logger.file())
+            except utils.LockError:
+                time.sleep(5)
+                continue
+            
+            self.print(f"Done! Sucessfully proxied {domain} to {service}.")
+            return
+        self.print(f"Failed to acquire Certbot lock 5 times. Could not proxy {domain} to {service}.")
+        
 
     def _do_db_deploy(self, service, image, port):
         """Saves the service to the :class:`~dna.utils.SQLite` database for this DNA instance
