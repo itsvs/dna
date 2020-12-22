@@ -43,14 +43,18 @@ class Logger:
 
     :param path: the path to the logfile
     :type path: str
+    :param append: whether to append to the logfile\
+        (defaults to ``False`` and overwrites logfile)
+    :type append: bool
     """
 
-    def __init__(self, path):
+    def __init__(self, path, append):
         self.path = path
+        self.append = append
 
     def open(self):
         """Open the logfile for writing"""
-        self.f = open(self.path, "w")
+        self.f = open(self.path, "a" if self.append else "w")
 
     def write(self, line):
         """Write to the logfile
