@@ -1,5 +1,6 @@
-import subprocess, time
+import subprocess, time, os
 from io import BytesIO
+from threading import Thread
 
 
 class SocatHelper:
@@ -35,6 +36,26 @@ class SocatHelper:
         self.socks = dna.path + "/socks"
 
         self._setup()
+    
+    def _fix_permissions(self, service, port):
+        """Wait for the socket binding to complete, then make the
+        socket visible to nginx
+
+        :param service: the name of the service
+        :type service: str
+        :param port: the port to be bound
+        :type port: str
+        """
+        path = f"{self.socks}/{service}.sock"
+        while not os.path.exists(path):
+            time.sleep(1)
+
+        out = subprocess.run(
+            ["chmod", "666", path], capture_output=True
+        )
+        self.dna.print(out.stdout)
+
+        self.dna.print(f"Bound {service}:{port} to {service}.sock.")
 
     def bind(self, service, port):
         """Bind ``port`` inside the ``service`` container to a socket called ``service.sock``
@@ -49,13 +70,14 @@ class SocatHelper:
             f"/bin/sh -c '{SocatHelper.SOCAT_CMD.format(service=service, port = port)}'",
             detach=True,
         )
-        time.sleep(3)
-        out = subprocess.run(
-            ["chmod", "666", f"{self.socks}/{service}.sock"], capture_output=True
-        )
-        self.dna.print(out.stdout)
 
-        self.dna.print(f"Bound {service}:{port} to {service}.sock.")
+        Thread(
+            target=self._fix_permissions,
+            kwargs={
+                "service": service,
+                "port": port,
+            },
+        ).start()
 
     def unbind(self, service, port):
         """Unbind ``port`` inside the ``service`` container from ``service.sock``
