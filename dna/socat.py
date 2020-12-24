@@ -52,7 +52,7 @@ class SocatHelper:
             time.sleep(1)
 
         out = sh("chmod", "666", path, stream=False)
-        self.dna.print(out.stdout)
+        self.dna.print(out)
 
         self.dna.print(f"Bound {service}:{port} to {service}.sock.")
 
