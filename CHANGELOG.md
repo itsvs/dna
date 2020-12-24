@@ -2,6 +2,12 @@
 
 <!-- skip title -->
 
+## v0.5.1
+
+*December 23, 2020*
+
+* Add logs index page to Flask integration
+
 ## v0.5.0
 
 *December 22, 2020*

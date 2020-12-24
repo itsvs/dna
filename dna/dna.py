@@ -365,18 +365,45 @@ class DNA:
             for execution to continue (good for things like authentication)
         :type precheck: func
         """
-        from flask import abort
+        from flask import abort, url_for
 
         if not endpoint.startswith("/"):
             endpoint = "/" + endpoint
         if not endpoint.endswith("/"):
             endpoint = endpoint + "/"
 
+        def _spcss(content=""):
+            return '<link rel="stylesheet" href="https://unpkg.com/spcss">\n' + content
+        
+        def _link(service, log, title):
+            return f"""<a href={
+                    url_for("attach_servlog", service=service.name, log=log)
+                }>{title}</a>"""
+
         @app.route(endpoint + "dna")
         def attach_dna():
             if precheck and not precheck():
                 abort(403)
             return "<br />".join(self.dna_logs().split("\n"))
+
+        @app.route(endpoint)
+        def logs_index():
+            if precheck and not precheck():
+                abort(403)
+
+            content = _spcss("<h1>DNA Service Logs</h1>")
+            content += "<p>See nginx and docker logs for all your running services! "
+            content += "Note that custom log types are currently not listed.</p>"
+            content += f'<a href={url_for("attach_dna")}>View Internal DNA Logs</a>'
+
+            for service in self.services:
+                content += "<h3>" + service.name + "</h3>\n<ul>\n"
+                content += f'<li>{_link(service, "nginx", "Nginx Access")}</li>\n'
+                content += f'<li>{_link(service, "error", "Nginx Errors")}</li>\n'
+                content += f'<li>{_link(service, "docker", "Container")}</li>\n'
+                content += "</ul>\n"
+
+            return content
 
         @app.route(endpoint + "<service>/<log>")
         def attach_servlog(service, log):
