@@ -54,6 +54,18 @@ class Service(Base):
         for d in self.domains:
             res += f", {d.url}"
         return res + ")"
+    
+    def to_json(self):
+        return {
+            "name": self.name,
+            "image": self.image,
+            "port": self.port,
+            "domains": [
+                {
+                    "url": d.url,
+                } for d in self.domains
+            ],
+        }
 
 
 class SQLite:

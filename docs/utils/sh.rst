@@ -1,6 +1,5 @@
 
-Logging
+The ``sh`` function
 =======================================================
 
-.. autoclass:: dna.utils.Logger
-    :members:
+.. autofunction:: dna.utils.sh

@@ -31,11 +31,10 @@ socat
 :maxdepth: 3
 :caption: The dna.utils Module
 
+utils/sh
+utils/flask
 utils/logger
-utils/certbot
-utils/docker
-utils/nginx
-utils/sqlite
+utils/internal
 ```
 
 ```{toctree}

@@ -2,6 +2,16 @@
 
 <!-- skip title -->
 
+## v0.6.0
+
+*Unreleased*
+
+* Add an optional Flask API utility
+* Moved logs utility to a dedicated Flask utility framework
+* Instead of importing `sh` in `utils`, move the function there
+* Replace all calls to `subprocess.run` with calls to `sh`
+* Restructured documentation to collapse internal utilities
+
 ## v0.5.1
 
 *December 23, 2020*

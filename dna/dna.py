@@ -306,7 +306,7 @@ class DNA:
 
         for domain in service.domains:
             os.remove(f"{self.confs}/{domain.url}.conf")
-        out = subprocess.run(["nginx", "-s", "reload"], capture_output=True)
+        out = utils.sh("nginx", "-s", "reload", stream=False)
         self.print(out.stdout)
 
         self.socat.unbind(service.name, service.port)
@@ -350,81 +350,11 @@ class DNA:
         with open(self.logs + "/dna.log") as f:
             return f.read()
 
-    def attach_logs_to_flask(self, app, endpoint, fallback=None, precheck=None):
-        """Display logs at the given endpoint on the given Flask app
+    def attach_api_to_flask(self, app, endpoint="/api/", precheck=lambda: False):
+        """See :class:`~dna.utils.flask.create_api_client`"""
+        utils.flask.create_api_client(self, app, endpoint, precheck)
 
-        :param app: the Flask app to forward logs to
-        :type app: :class:`~flask.Flask`
-        :param endpoint: the base endpoint for logs
-        :type endpoint: str
-        :param fallback: an optional fallback function if DNA can't handle logs\
-            such as if you want to display a type of logs that DNA isn't familiar\
-            with (ex. image build logs)
-        :type fallback: func
-        :param precheck: an optional precursor function that must return ``True``\
-            for execution to continue (good for things like authentication)
-        :type precheck: func
-        """
-        from flask import abort, url_for
-
-        if not endpoint.startswith("/"):
-            endpoint = "/" + endpoint
-        if not endpoint.endswith("/"):
-            endpoint = endpoint + "/"
-
-        def _spcss(content=""):
-            return '<link rel="stylesheet" href="https://unpkg.com/spcss">\n' + content
+    def attach_logs_to_flask(self, app, endpoint="/logs/", fallback=None, precheck=lambda: True):
+        """See :class:`~dna.utils.flask.create_logs_client`"""
+        utils.flask.create_logs_client(self, app, endpoint, fallback, precheck)
         
-        def _link(service, log, title):
-            return f"""<a href={
-                    url_for("attach_servlog", service=service.name, log=log)
-                }>{title}</a>"""
-
-        @app.route(endpoint + "dna")
-        def attach_dna():
-            if precheck and not precheck():
-                abort(403)
-            return "<br />".join(self.dna_logs().split("\n"))
-
-        @app.route(endpoint)
-        def logs_index():
-            if precheck and not precheck():
-                abort(403)
-
-            content = _spcss("<h1>DNA Service Logs</h1>")
-            content += "<p>See nginx and docker logs for all your running services! "
-            content += "Note that custom log types are currently not listed.</p>"
-            content += f'<a href={url_for("attach_dna")}>View Internal DNA Logs</a>'
-
-            for service in self.services:
-                content += "<h3>" + service.name + "</h3>\n<ul>\n"
-                content += f'<li>{_link(service, "nginx", "Nginx Access")}</li>\n'
-                content += f'<li>{_link(service, "error", "Nginx Errors")}</li>\n'
-                content += f'<li>{_link(service, "docker", "Container")}</li>\n'
-                content += "</ul>\n"
-
-            return content
-
-        @app.route(endpoint + "<service>/<log>")
-        def attach_servlog(service, log):
-            if precheck and not precheck():
-                abort(403)
-
-            service, service_name = self.get_service_info(service), service
-            if not service and fallback:
-                return fallback(service_name, log)
-            if not service:
-                abort(404)
-
-            if log == "nginx":
-                return "<br />".join(self.nginx_logs(service.name).split("\n"))
-            if log == "error":
-                return "<br />".join(
-                    self.nginx_logs(service.name, error=True).split("\n")
-                )
-            if log == "docker":
-                return "<br />".join(self.docker_logs(service.name).split("\n"))
-
-            if fallback:
-                return fallback(service.name, log)
-            abort(404)
