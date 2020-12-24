@@ -120,7 +120,7 @@ def create_logs_client(dna, app, base="/logs/", fallback=None, precheck=lambda: 
                 url_for("attach_servlog", service=service.name, log=log)
             }>{title}</a>"""
 
-    @app.route(endpoint)
+    @app.route(base)
     def logs_index():
         if not precheck():
             abort(403)
@@ -139,13 +139,13 @@ def create_logs_client(dna, app, base="/logs/", fallback=None, precheck=lambda: 
 
         return content
     
-    @app.route(endpoint + "dna")
+    @app.route(base + "dna")
     def attach_dna():
         if not precheck():
             abort(403)
         return "<br />".join(dna.dna_logs().split("\n"))
 
-    @app.route(endpoint + "<service>/<log>")
+    @app.route(base + "<service>/<log>")
     def attach_servlog(service, log):
         if not precheck():
             abort(403)
