@@ -20,7 +20,7 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
     def pull_image():
         if not precheck():
             abort(403)
-        data = request.json
+        data = request.get_json()
         
         image = data.get("image")
         tag = data.get("tag", None)
@@ -31,7 +31,7 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
     def build_image():
         if not precheck():
             abort(403)
-        data = request.json
+        data = request.get_json()
         options = data.get("options")
 
         return Response(stream_with_context(dna.pull_image(True, **options)))
@@ -40,7 +40,7 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
     def run_deploy():
         if not precheck():
             abort(403)
-        data = request.json
+        data = request.get_json()
 
         service = data.get("service")
         image = data.get("image")
@@ -67,7 +67,7 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
     def add_domain():
         if not precheck():
             abort(403)
-        data = request.json
+        data = request.get_json()
 
         service = data.get("service")
         domain = data.get("domain")
@@ -80,7 +80,7 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
     def delete_service():
         if not precheck():
             abort(403)
-        data = request.json
+        data = request.get_json()
         service = data.get("service")
 
         dna.delete_service(service)
