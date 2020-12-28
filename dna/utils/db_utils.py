@@ -216,6 +216,15 @@ class SQLite:
         self._add(domain)
         return domain
     
+    def get_active_keys(self):
+        keys = self.s.query(ApiKey).all()
+        keys = [k for k in keys if not k.is_expired()]
+        return keys
+
+    def get_key_info(self, key):
+        get = self.s.query(ApiKey).filter(ApiKey.key == key).one_or_none()
+        return get
+
     def new_api_key(self, key, ip):
         key_obj = ApiKey(key=key, ip=ip, issued_at=time.time(), expires_in=3600)
         self._add(key_obj)

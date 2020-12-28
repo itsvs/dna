@@ -16,7 +16,7 @@ def create_api_client(dna, precheck=None):
         for execution to continue (good for things like authentication)
     :type precheck: func
     """
-    from flask import request, Response, stream_with_context, jsonify, abort, Blueprint
+    from flask import request, Response, stream_with_context, jsonify, abort, Blueprint, render_template, redirect, url_for
 
     api = Blueprint('dna_api', __name__)
 
@@ -27,7 +27,19 @@ def create_api_client(dna, precheck=None):
                 abort(403)
             return wrapped
 
-    @api.route("/gen_key")
+    @api.route("/")
+    @precheck
+    def keys_index():
+        keys = dna.db.get_active_keys()
+        return render_template("keys.html", keys=keys)
+    
+    @api.route("/manage_key")
+    @precheck
+    def manage_key():
+        key = dna.db.get_key_info(request.args.get("key"))
+        return render_template("key.html", key=key)
+
+    @api.route("/new_key")
     @precheck
     def gen_key():
         key = dna.db.new_api_key(
@@ -35,17 +47,13 @@ def create_api_client(dna, precheck=None):
             request.environ.get("HTTP_X_FORWARDED_FOR", "0.0.0.0"),
         )
 
-        return jsonify(
-            success=True,
-            api_key=key.key, 
-            expires_at=(key.issued_at + key.expires_in), 
-            authorized_ip=key.ip
-        )
+        return redirect(url_for("dna_api.manage_key", key=key.key))
     
     @api.route("/revoke_key/<key>")
     @precheck
     def revoke_key(key):
-        return jsonify(success=dna.db.revoke_api_key(key))
+        dna.db.revoke_api_key(key)
+        return redirect(url_for("dna_api.manage_key", key=key.key))
     
     def _check_key():
         key = request.headers.get("App-Key-DNA", "")
