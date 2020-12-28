@@ -381,9 +381,9 @@ class DNA:
 
     def create_api_client(self, precheck=None):
         """See :class:`~dna.utils.create_api_client`"""
-        return utils.flask.create_api_client(self, precheck)
+        return utils.create_api_client(self, precheck)
 
     def create_logs_client(self, fallback=None, precheck=lambda f: f):
         """See :class:`~dna.utils.create_logs_client`"""
-        return utils.flask.create_logs_client(self, fallback, precheck)
+        return utils.create_logs_client(self, fallback, precheck)
         
