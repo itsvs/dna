@@ -5,7 +5,6 @@ from certbot._internal.main import make_or_verify_needed_dirs
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.errors import LockError
 import zope.component, sys
-from dna.utils import sh
 
 
 class Certbot:
@@ -20,6 +19,9 @@ class Certbot:
     """
 
     def __init__(self, args=[]):
+        from dna.utils import sh
+
+        self.sh = sh
         self.plugins = plugins_disco.PluginsRegistry.find_all()
         self.args = args
 
@@ -101,8 +103,8 @@ class Certbot:
         for domain in domains:
             args.extend(["-d", domain])
         args.extend(self.args)
-        out = sh("certbot", *args, stream=False)
-        logger(out)
+        out = self.sh("certbot", *args, stream=False)
+        print(out, file=sys.stderr)
         # self._main(args, logfile)
 
     def _main(self, args, logfile):

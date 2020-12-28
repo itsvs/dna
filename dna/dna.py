@@ -168,6 +168,7 @@ class DNA:
         self.print("Doing nginx deploy...")
         if os.path.exists(f"{self.confs}/{domain}.conf"):
             self.print(f"An nginx config for {domain} already exists!")
+            self.print("Nothing to do.")
             return
 
         socket = f"{self.socks}/{service}.sock"
@@ -181,29 +182,18 @@ class DNA:
         self.print(out)
 
         self.print("Installing or provisioning certificate, as needed...")
-        for _ in range(12):
-            try:
-                cert = self.certbot.cert_else_false(domain, force_wildcard)
-                if cert and not force_provision:
-                    self.print(f"Found a matching certificate! Installing...")
-                    self.certbot.attach_cert(cert, domain, logger=self.print)
-                else:
-                    wildcard = force_provision and force_wildcard
-                    self.print(f"Provisioning a new {'wildcard' if wildcard else ''} certificate...")
-                    domains = [domain]
-                    if wildcard:
-                        domains.append(f"*.{domain}")
-                    self.certbot.run_bot(domains, logger=self.print)
-                break
-            except Exception as error:
-                self.print(error)
-                time.sleep(5)
-                continue
-            
-            self.print(f"Done! Sucessfully proxied https://{domain} to {service}.")
-            return
-        self.print(f"Failed to secure {domain}.")
-        self.print(f"Done! Sucessfully proxied http://{domain} to {service}.")
+        cert = self.certbot.cert_else_false(domain, force_wildcard)
+        if cert and not force_provision:
+            self.print(f"Found a matching certificate! Installing...")
+            self.certbot.attach_cert(cert, domain, logger=self.print)
+        else:
+            wildcard = force_provision and force_wildcard
+            self.print(f"Provisioning a new {'wildcard' if wildcard else ''} certificate...")
+            domains = [domain]
+            if wildcard:
+                domains.append(f"*.{domain}")
+            self.certbot.run_bot(domains, logger=self.print)
+        self.print(f"Done! Sucessfully proxied https://{domain} to {service}.")
         
 
     def _do_db_deploy(self, service, image, port):
@@ -276,7 +266,7 @@ class DNA:
         """
         return self.db.get_service_by_name(service)
 
-    def add_domain(self, service, domain, force_wildcard=False):
+    def add_domain(self, service, domain, force_wildcard=False, force_provision=False):
         """Proxy ``domain`` to ``service``, if it is not already bound to another service
 
         :param service: the name of the service
@@ -288,7 +278,7 @@ class DNA:
         :type force_wildcard: bool
         """
         if self.db.add_domain_to_service(domain, service):
-            self._do_nginx_deploy(service, domain, force_wildcard)
+            self._do_nginx_deploy(service, domain, force_wildcard, force_provision)
             self.propagate_services()
             return True
         return False

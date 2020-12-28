@@ -113,8 +113,9 @@ def create_api_client(dna, precheck=None):
         service = data.get("service")
         domain = data.get("domain")
         force_wildcard = data.get("force_wildcard", False)
+        force_provision = data.get("force_provision", False)
 
-        return jsonify(success=dna.add_domain(service, domain, force_wildcard))
+        return jsonify(success=dna.add_domain(service, domain, force_wildcard, force_provision))
 
     @api.route("/remove_domain", methods=["POST"])
     def remove_domain():
