@@ -1,10 +1,5 @@
-from certbot import util
-from certbot.display import util as display_util
-from certbot._internal import cli, configuration, storage, reporter
-from certbot._internal.main import make_or_verify_needed_dirs
+from certbot._internal import cli, configuration, storage
 from certbot._internal.plugins import disco as plugins_disco
-from certbot.errors import LockError
-import zope.component, sys
 
 
 class Certbot:
@@ -53,6 +48,8 @@ class Certbot:
     def cert_else_false(self, domain, force_wildcard=False):
         """Get a certificate matching ``domain`` if there is one, else ``False``
 
+        By default, this will return an exact match if it exists. If one does not exist, then it will search for a wildcard one level above. If that doesn't exist either, returns ``False``.
+
         :param domain: the domain to match
         :type domain: str
         :param force_wildcard: forcibly search for a wildcard certificate only\
@@ -80,8 +77,8 @@ class Certbot:
         :type cert: :class:`~certbot.interfaces.RenewableCert`
         :param domain: the domain to install the certificate on
         :type domain: str
-        :param logfile: the io to stream output to
-        :type logfile: file-like object
+        :param logger: the function to stream output to
+        :type logger: func
         """
         self.run_bot(
             [domain],
@@ -96,28 +93,12 @@ class Certbot:
         :type domains: list[str]
         :param args: any extra arguments to pass to ``certbot``, such as a command
         :type args: list[str]
-        :param logfile: the io to stream output to
-        :type logfile: file-like object
+        :param logger: the function to stream output to
+        :type logger: func
         """
         args = list(args)
         for domain in domains:
             args.extend(["-d", domain])
         args.extend(self.args)
         out = self.sh("certbot", *args, stream=False)
-        print(out, file=sys.stderr)
-        # self._main(args, logfile)
-
-    def _main(self, args, logfile):
-        config = self._config(args)
-        zope.component.provideUtility(config)
-
-        make_or_verify_needed_dirs(config)
-
-        displayer = display_util.FileDisplay(logfile, False)
-        zope.component.provideUtility(displayer)
-
-        report = reporter.Reporter(config)
-        zope.component.provideUtility(report)
-        util.atexit_register(report.print_messages)
-
-        return config.func(config, self.plugins)
+        logger(out)

@@ -6,9 +6,20 @@
 
 *Unreleased*
 
-* Add an optional Flask API utility
-* Moved logs utility to a dedicated Flask utility framework
-* Instead of importing `sh` in `utils`, move the function there
+### NEW: Flask Integrations
+
+* Add a Flask REST API, which can be optionally attached as a Blueprint
+* Moved logs utility to a dedicated Flask utility framework, which can be optionally attached as a Blueprint
+
+### Domain Management
+
+* Add ability to *sign* wildcard certificates when adding domains to existing services
+* Add ability to remove domains from existing services
+* Modified `certbot` interfacing to call the command-line package instead of replicating its complicated inner workings
+
+### Miscellaneous
+
+* Instead of importing `sh` in `utils`, move the function to `utils`
 * Replace all calls to `subprocess.run` with calls to `sh`
 * Restructured documentation to collapse internal utilities
 

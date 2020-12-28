@@ -3,19 +3,19 @@ from dna.utils.jinja_utils import *
 import os, datetime
 
 def create_api_client(dna, precheck=None):
-    """Expose DNA functions at the given endpoint on the given Flask app
+    """Create a Flask Blueprint to expose DNA functions as a REST API
 
     Since these functions control deployment, the ``precheck`` is restrictive
-    by default. Please make sure to pass in a function that properly validates
-    authenticated users and allows them to use the API endpoints.
+    by default. Please make sure to pass in a decorator that properly validates
+    authenticated users and allows them to use the API key endpoints.
 
-    :param app: the Flask app to expose functions to
-    :type app: :class:`~flask.Flask`
-    :param base: the base endpoint for the API (defaults to "/api/")
-    :type base: str
-    :param precheck: an optional precursor function that must return ``True``\
-        for execution to continue (good for things like authentication)
-    :type precheck: func
+    :param dna: the dna instance to interface with
+    :type dna: :class:`~dna.DNA`
+    :param precheck: an optional decorator that wraps the API key endpoints
+    :type precheck: decorator
+
+    :return: a Flask :class:`~flask.Blueprint` that can be registered to a\
+        :class:`~flask.Flask` app
     """
     from flask import request, Response, stream_with_context, jsonify, abort, Blueprint, render_template_string, redirect, url_for
 
@@ -145,23 +145,23 @@ def create_api_client(dna, precheck=None):
     return api
 
 def create_logs_client(dna, fallback=None, precheck=lambda f: f):
-    """Display logs at the given endpoint on the given Flask app
+    """Create a Flask Blueprint to display DNA logs on a website
 
     Since logs are typically not sensitive, the ``precheck`` is permissive by
     default. Please make sure to change this functionality if you don't want
-    it to be publicly accessible.
+    the logs to be publicly accessible.
 
-    :param app: the Flask app to forward logs to
-    :type app: :class:`~flask.Flask`
-    :param base: the base endpoint for logs (defaults to "/logs/")
-    :type base: str
+    :param dna: the dna instance to interface with
+    :type dna: :class:`~dna.DNA`
     :param fallback: an optional fallback function if DNA can't handle logs\
         such as if you want to display a type of logs that DNA isn't familiar\
         with (ex. image build logs)
     :type fallback: func
-    :param precheck: an optional precursor function that must return ``True``\
-        for execution to continue (good for things like authentication)
-    :type precheck: func
+    :param precheck: an optional decorator that wraps all log endpoints
+    :type precheck: decorator
+
+    :return: a Flask :class:`~flask.Blueprint` that can be registered to a\
+        :class:`~flask.Flask` app
     """
     from flask import abort, url_for, Blueprint
     logs = Blueprint('dna_logs', __name__)

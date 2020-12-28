@@ -1,3 +1,4 @@
+#: The Jinja Template to render brief information for a list of API keys
 JINJA_API_KEYS = """<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/spcss@0.5.0">
 <style>pre{white-space:wrap}body{margin-bottom:10px}</style>
 <title>Active API Keys</title>
@@ -19,6 +20,7 @@ JINJA_API_KEYS = """<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sp
 <br />
 """
 
+#: The Jinja Template to render all information for a specific API key
 JINJA_API_KEY = """<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/spcss@0.5.0">
 <style>pre{white-space:wrap}body{margin-bottom:10px}</style>
 <title>API Key</title>

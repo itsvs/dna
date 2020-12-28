@@ -164,6 +164,12 @@ class DNA:
         :param force_wildcard: forcibly use a wildcard SSL certificate only\
             (defaults to ``False``)
         :type force_wildcard: bool
+        :param force_provision: forcibly provision a certificate even if\
+            another match exists (defaults to ``False``)
+        :type force_provision: bool
+
+        Note that if ``force_wildcard`` and ``force_provision`` are both ``True``,\
+            then a certificate will be provisioned for ``domain`` as well as ``*.domain``.
         """
         self.print("Doing nginx deploy...")
         if os.path.exists(f"{self.confs}/{domain}.conf"):
@@ -284,6 +290,12 @@ class DNA:
         :param force_wildcard: forcibly use a wildcard SSL certificate only\
             (defaults to ``False``)
         :type force_wildcard: bool
+        :param force_provision: forcibly provision a certificate even if\
+            another match exists (defaults to ``False``)
+        :type force_provision: bool
+
+        Note that if ``force_wildcard`` and ``force_provision`` are both ``True``,\
+            then a certificate will be provisioned for ``domain`` as well as ``*.domain``.
         """
         if self.db.add_domain_to_service(domain, service):
             self._do_nginx_deploy(service, domain, force_wildcard, force_provision)
@@ -291,13 +303,19 @@ class DNA:
             return True
         return False
 
-    def _do_nginx_delete(self, domain):
-        os.remove(f"{self.confs}/{domain}.conf")
-        out = utils.sh("nginx", "-s", "reload", stream=False)
-
     def remove_domain(self, service, domain):
+        """Remove ``domain`` from ``service``, if it is bound to it
+
+        Note that relevant nginx configs will be deleted, but not certbot certificates.
+
+        :param service: the name of the service
+        :type service: str
+        :param domain: the url to unbind from the service
+        :type domain: str
+        """
         if self.db.remove_domain_from_service(domain, service):
-            self._do_nginx_delete(domain)
+            os.remove(f"{self.confs}/{domain}.conf")
+            out = utils.sh("nginx", "-s", "reload", stream=False)
             self.propagate_services()
             return True
         return False
@@ -362,10 +380,10 @@ class DNA:
             return f.read()
 
     def create_api_client(self, precheck=None):
-        """See :class:`~dna.utils.flask.create_api_client`"""
+        """See :class:`~dna.utils.create_api_client`"""
         return utils.flask.create_api_client(self, precheck)
 
     def create_logs_client(self, fallback=None, precheck=lambda f: f):
-        """See :class:`~dna.utils.flask.create_logs_client`"""
+        """See :class:`~dna.utils.create_logs_client`"""
         return utils.flask.create_logs_client(self, fallback, precheck)
         
