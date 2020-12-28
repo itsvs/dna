@@ -1,6 +1,6 @@
 import os
 
-def create_api_client(dna, app, base="/api/", precheck=lambda: False):
+def create_api_client(dna, precheck=lambda: False):
     """Expose DNA functions at the given endpoint on the given Flask app
 
     Since these functions control deployment, the ``precheck`` is restrictive
@@ -15,10 +15,12 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
         for execution to continue (good for things like authentication)
     :type precheck: func
     """
-    from flask import request, Response, stream_with_context, jsonify, abort
+    from flask import request, Response, stream_with_context, jsonify, abort, Blueprint
 
-    @app.route(base + "gen_api_key")
-    def gen_api_key():
+    api = Blueprint('dna_api', __name__)
+
+    @api.route("/gen_key")
+    def gen_key():
         if not precheck():
             abort(403)
         key = dna.db.new_api_key(
@@ -33,23 +35,23 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
             authorized_ip=key.ip
         )
     
-    @app.route(base + "revoke_api_key/<key>")
-    def revoke_api_key(key):
+    @api.route("/revoke_key/<key>")
+    def revoke_key(key):
         if not precheck():
             abort(403)
         return jsonify(success=dna.db.revoke_api_key(key))
     
-    def _check_api_key():
+    def _check_key():
         key = request.headers.get("App-Key-DNA", "")
         ip = request.environ.get("HTTP_X_FORWARDED_FOR", "0.0.0.0")
         if not dna.db.check_api_key(key, ip):
             abort(403)
         return True
 
-    @app.route(base + "pull_image", methods=["POST"])
+    @api.route("/pull_image", methods=["POST"])
     def pull_image():
         if not precheck():
-            _check_api_key()
+            _check_key()
         data = request.get_json()
         
         image = data.get("image")
@@ -57,19 +59,19 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
 
         return Response(stream_with_context(dna.pull_image(image, tag, True)))
     
-    @app.route(base + "build_image", methods=["POST"])
+    @api.route("/build_image", methods=["POST"])
     def build_image():
         if not precheck():
-            _check_api_key()
+            _check_key()
         data = request.get_json()
         options = data.get("options")
 
         return Response(stream_with_context(dna.pull_image(True, **options)))
     
-    @app.route(base + "run_deploy", methods=["POST"])
+    @api.route("/run_deploy", methods=["POST"])
     def run_deploy():
         if not precheck():
-            _check_api_key()
+            _check_key()
         data = request.get_json()
 
         service = data.get("service")
@@ -80,23 +82,23 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
         dna.run_deploy(service, image, port, **options)
         return jsonify({"success": True})
     
-    @app.route(base + "propagate_services", methods=["POST"])
+    @api.route("/propagate_services", methods=["POST"])
     def propagate_services():
         if not precheck():
-            _check_api_key()
+            _check_key()
         dna.propagate_services()
         return jsonify({"success": True})
     
-    @app.route(base + "get_service_info/<name>")
+    @api.route("/get_service_info/<name>")
     def get_service_info(name):
         if not precheck():
-            _check_api_key()
+            _check_key()
         return jsonify(dna.get_service_info(name).to_json())
     
-    @app.route(base + "add_domain", methods=["POST"])
+    @api.route("/add_domain", methods=["POST"])
     def add_domain():
         if not precheck():
-            _check_api_key()
+            _check_key()
         data = request.get_json()
 
         service = data.get("service")
@@ -106,17 +108,19 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
         dna.add_domain(service, domain, force_wildcard)
         return jsonify({"success": True})
 
-    @app.route(base + "delete_service", methods=["DELETE"])
+    @api.route("/delete_service", methods=["DELETE"])
     def delete_service():
         if not precheck():
-            _check_api_key()
+            _check_key()
         data = request.get_json()
         service = data.get("service")
 
         dna.delete_service(service)
         return jsonify({"success": True})
+    
+    return api
 
-def create_logs_client(dna, app, base="/logs/", fallback=None, precheck=lambda: True):
+def create_logs_client(dna, fallback=None, precheck=lambda: True):
     """Display logs at the given endpoint on the given Flask app
 
     Since logs are typically not sensitive, the ``precheck`` is permissive by
@@ -135,22 +139,18 @@ def create_logs_client(dna, app, base="/logs/", fallback=None, precheck=lambda: 
         for execution to continue (good for things like authentication)
     :type precheck: func
     """
-    from flask import abort, url_for
-
-    if not base.startswith("/"):
-        base = "/" + base
-    if not base.endswith("/"):
-        base = base + "/"
+    from flask import abort, url_for, Blueprint
+    logs = Blueprint('dna_logs', __name__)
 
     def _spcss(content=""):
         return '<link rel="stylesheet" href="https://unpkg.com/spcss">\n' + content
     
     def _link(service, log, title):
         return f"""<a href={
-                url_for("attach_servlog", service=service.name, log=log)
+                url_for("dna_logs.servlog", service=service.name, log=log)
             }>{title}</a>"""
 
-    @app.route(base)
+    @logs.route("/")
     def logs_index():
         if not precheck():
             abort(403)
@@ -158,7 +158,7 @@ def create_logs_client(dna, app, base="/logs/", fallback=None, precheck=lambda: 
         content = _spcss("<h1>DNA Service Logs</h1>")
         content += "<p>See nginx and docker logs for all your running services! "
         content += "Note that custom log types are currently not listed.</p>"
-        content += f'<a href={url_for("attach_dna")}>View Internal DNA Logs</a>'
+        content += f'<a href={url_for("dna_logs.dnalog")}>View Internal DNA Logs</a>'
 
         for service in dna.services:
             content += "<h3>" + service.name + "</h3>\n<ul>\n"
@@ -169,14 +169,14 @@ def create_logs_client(dna, app, base="/logs/", fallback=None, precheck=lambda: 
 
         return content
     
-    @app.route(base + "dna")
-    def attach_dna():
+    @logs.route("/dna")
+    def dnalog():
         if not precheck():
             abort(403)
         return "<br />".join(dna.dna_logs().split("\n"))
 
-    @app.route(base + "<service>/<log>")
-    def attach_servlog(service, log):
+    @logs.route("/<service>/<log>")
+    def servlog(service, log):
         if not precheck():
             abort(403)
 
@@ -198,3 +198,5 @@ def create_logs_client(dna, app, base="/logs/", fallback=None, precheck=lambda: 
         if fallback:
             return fallback(service.name, log)
         abort(404)
+    
+    return logs

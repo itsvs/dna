@@ -350,11 +350,11 @@ class DNA:
         with open(self.logs + "/dna.log") as f:
             return f.read()
 
-    def attach_api_to_flask(self, app, endpoint="/api/", precheck=lambda: False):
+    def create_api_client(self, precheck=lambda: False):
         """See :class:`~dna.utils.flask.create_api_client`"""
-        utils.flask.create_api_client(self, app, endpoint, precheck)
+        utils.flask.create_api_client(self, precheck)
 
-    def attach_logs_to_flask(self, app, endpoint="/logs/", fallback=None, precheck=lambda: True):
+    def create_logs_client(self, fallback=None, precheck=lambda: True):
         """See :class:`~dna.utils.flask.create_logs_client`"""
-        utils.flask.create_logs_client(self, app, endpoint, fallback, precheck)
+        utils.flask.create_logs_client(self, fallback, precheck)
         
