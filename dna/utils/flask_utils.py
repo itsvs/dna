@@ -1,5 +1,5 @@
 from functools import wraps
-import dna.utils.jinja as jinja
+from dna.utils.jinja_utils import *
 import os
 
 def create_api_client(dna, precheck=None):
@@ -32,13 +32,13 @@ def create_api_client(dna, precheck=None):
     @precheck
     def keys_index():
         keys = dna.db.get_active_keys()
-        return render_template_string(jinja.JINJA_API_KEYS, keys=keys)
+        return render_template_string(JINJA_API_KEYS, keys=keys)
     
     @api.route("/manage_key")
     @precheck
     def manage_key():
         key = dna.db.get_key_info(request.args.get("key"))
-        return render_template_string(jinja.JINJA_API_KEY, key=key)
+        return render_template_string(JINJA_API_KEY, key=key)
 
     @api.route("/new_key")
     @precheck
