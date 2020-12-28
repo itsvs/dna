@@ -225,7 +225,16 @@ class SQLite:
         get = self.s.query(ApiKey).filter(ApiKey.key == key).one_or_none()
         if not get:
             return False
-        return get.ip == ip
+        return get.ip == ip and not get.is_expired()
+    
+    def revoke_api_key(self, key):
+        get = self.s.query(ApiKey).filter(ApiKey.key == key).one_or_none()
+        if not get:
+            return False
+        get.expires_in = 0
+        
+        self.s.commit()
+        return get.is_expired()
 
     def _add(self, obj):
         """Add and commit the specified object to the database
