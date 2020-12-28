@@ -29,10 +29,12 @@ JINJA_API_KEY = """<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/spc
   <strong>Key: </strong>{{ key.key }}
   <strong>Authorized IP: </strong>{{ key.ip }}
   <strong>Created: </strong> {{ key.issued_at | dt }}
-  <strong>Expires in: </strong>{{ key.expires_in }}
-  <strong>Expired? </strong>{{ key.is_expired() }}
+  <strong>Expires: </strong>{{ (key.issued_at + key.expires_in) | dt }}
   {% if not key.is_expired() %}
-  <a href="{{ url_for('dna_api.revoke_key', key=key.key) }}">Revoke Key</a>{% endif %}
+  <a href="{{ url_for('dna_api.revoke_key', key=key.key) }}">Revoke Key</a>
+  {%- else -%}
+  Revoked.
+  {%- endif -%}
 </pre>
 <br />
 

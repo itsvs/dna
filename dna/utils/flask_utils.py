@@ -54,7 +54,7 @@ def create_api_client(dna, precheck=None):
     @precheck
     def revoke_key(key):
         dna.db.revoke_api_key(key)
-        return redirect(url_for("dna_api.manage_key", key=key.key))
+        return redirect(url_for("dna_api.manage_key", key=key))
     
     def _check_key():
         key = request.headers.get("App-Key-DNA", "")
