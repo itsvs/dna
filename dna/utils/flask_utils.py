@@ -1,6 +1,7 @@
+from functools import wraps
 import os
 
-def create_api_client(dna, precheck=lambda: False):
+def create_api_client(dna, precheck=None):
     """Expose DNA functions at the given endpoint on the given Flask app
 
     Since these functions control deployment, the ``precheck`` is restrictive
@@ -19,10 +20,16 @@ def create_api_client(dna, precheck=lambda: False):
 
     api = Blueprint('dna_api', __name__)
 
+    if not precheck:
+        def precheck(func):
+            @wraps(func)
+            def wrapped(*args, **kwargs):
+                abort(403)
+            return wrapped
+
     @api.route("/gen_key")
+    @precheck
     def gen_key():
-        if not precheck():
-            abort(403)
         key = dna.db.new_api_key(
             os.urandom(24).hex(),
             request.environ.get("HTTP_X_FORWARDED_FOR", "0.0.0.0"),
@@ -36,9 +43,8 @@ def create_api_client(dna, precheck=lambda: False):
         )
     
     @api.route("/revoke_key/<key>")
+    @precheck
     def revoke_key(key):
-        if not precheck():
-            abort(403)
         return jsonify(success=dna.db.revoke_api_key(key))
     
     def _check_key():
@@ -50,8 +56,7 @@ def create_api_client(dna, precheck=lambda: False):
 
     @api.route("/pull_image", methods=["POST"])
     def pull_image():
-        if not precheck():
-            _check_key()
+        _check_key()
         data = request.get_json()
         
         image = data.get("image")
@@ -61,8 +66,7 @@ def create_api_client(dna, precheck=lambda: False):
     
     @api.route("/build_image", methods=["POST"])
     def build_image():
-        if not precheck():
-            _check_key()
+        _check_key()
         data = request.get_json()
         options = data.get("options")
 
@@ -70,8 +74,7 @@ def create_api_client(dna, precheck=lambda: False):
     
     @api.route("/run_deploy", methods=["POST"])
     def run_deploy():
-        if not precheck():
-            _check_key()
+        _check_key()
         data = request.get_json()
 
         service = data.get("service")
@@ -84,21 +87,18 @@ def create_api_client(dna, precheck=lambda: False):
     
     @api.route("/propagate_services", methods=["POST"])
     def propagate_services():
-        if not precheck():
-            _check_key()
+        _check_key()
         dna.propagate_services()
         return jsonify({"success": True})
     
     @api.route("/get_service_info/<name>")
     def get_service_info(name):
-        if not precheck():
-            _check_key()
+        _check_key()
         return jsonify(dna.get_service_info(name).to_json())
     
     @api.route("/add_domain", methods=["POST"])
     def add_domain():
-        if not precheck():
-            _check_key()
+        _check_key()
         data = request.get_json()
 
         service = data.get("service")
@@ -110,8 +110,7 @@ def create_api_client(dna, precheck=lambda: False):
 
     @api.route("/delete_service", methods=["DELETE"])
     def delete_service():
-        if not precheck():
-            _check_key()
+        _check_key()
         data = request.get_json()
         service = data.get("service")
 

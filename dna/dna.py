@@ -350,7 +350,7 @@ class DNA:
         with open(self.logs + "/dna.log") as f:
             return f.read()
 
-    def create_api_client(self, precheck=lambda: False):
+    def create_api_client(self, precheck=None):
         """See :class:`~dna.utils.flask.create_api_client`"""
         return utils.flask.create_api_client(self, precheck)
 
