@@ -1,6 +1,7 @@
-from sqlalchemy import Column, String, ForeignKey, create_engine
+from sqlalchemy import Column, String, Integer, ForeignKey, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, relationship, backref
+import time
 
 Base = declarative_base()
 
@@ -66,6 +67,17 @@ class Service(Base):
                 } for d in self.domains
             ],
         }
+
+
+class ApiKey(Base):
+    __tablename__ = "apikey"
+    key = Column(String)
+    ip = Column(String)
+    issued_at = Column(Integer)
+    expires_in = Column(Integer)
+
+    def is_expired(self):
+        return self.issued_at + self.expires_in <= time.time() + 10
 
 
 class SQLite:
@@ -202,6 +214,17 @@ class SQLite:
         domain = Domain(url=url)
         self._add(domain)
         return domain
+    
+    def new_api_key(self, key, ip):
+        key_obj = ApiKey(key=key, ip=ip, issued_at=time.time(), expires_in=3600)
+        self._add(key_obj)
+        return key_obj
+    
+    def check_api_key(self, key, ip):
+        get = self.s.query(ApiKey).filter(ApiKey.key == key).one_or_none()
+        if not get:
+            return False
+        return get.ip == ip
 
     def _add(self, obj):
         """Add and commit the specified object to the database

@@ -1,3 +1,4 @@
+import os
 
 def create_api_client(dna, app, base="/api/", precheck=lambda: False):
     """Expose DNA functions at the given endpoint on the given Flask app
@@ -16,10 +17,33 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
     """
     from flask import request, Response, stream_with_context, jsonify, abort
 
+    @app.route(base + "gen_api_key")
+    def gen_api_key():
+        if not precheck():
+            abort(403)
+        key = dna.db.new_api_key(
+            os.urandom(24).hex(),
+            request.remote_addr,
+        )
+
+        return jsonify(
+            success=True,
+            api_key=key.key, 
+            expires_at=(key.issued_at + key.expires_in), 
+            authorized_ip=key.ip
+        )
+    
+    def _check_api_key():
+        key = request.headers.get("App-Key-DNA", "")
+        ip = request.remote_addr
+        if not dna.db.check_api_key(key, ip):
+            abort(403)
+        return True
+
     @app.route(base + "pull_image", methods=["POST"])
     def pull_image():
         if not precheck():
-            abort(403)
+            _check_api_key()
         data = request.get_json()
         
         image = data.get("image")
@@ -30,7 +54,7 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
     @app.route(base + "build_image", methods=["POST"])
     def build_image():
         if not precheck():
-            abort(403)
+            _check_api_key()
         data = request.get_json()
         options = data.get("options")
 
@@ -39,7 +63,7 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
     @app.route(base + "run_deploy", methods=["POST"])
     def run_deploy():
         if not precheck():
-            abort(403)
+            _check_api_key()
         data = request.get_json()
 
         service = data.get("service")
@@ -53,20 +77,20 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
     @app.route(base + "propagate_services", methods=["POST"])
     def propagate_services():
         if not precheck():
-            abort(403)
+            _check_api_key()
         dna.propagate_services()
         return jsonify({"success": True})
     
     @app.route(base + "get_service_info/<name>")
     def get_service_info(name):
         if not precheck():
-            abort(403)
+            _check_api_key()
         return jsonify(dna.get_service_info(name).to_json())
     
     @app.route(base + "add_domain", methods=["POST"])
     def add_domain():
         if not precheck():
-            abort(403)
+            _check_api_key()
         data = request.get_json()
 
         service = data.get("service")
@@ -79,7 +103,7 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
     @app.route(base + "delete_service", methods=["DELETE"])
     def delete_service():
         if not precheck():
-            abort(403)
+            _check_api_key()
         data = request.get_json()
         service = data.get("service")
 
