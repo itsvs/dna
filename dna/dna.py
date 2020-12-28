@@ -154,7 +154,7 @@ class DNA:
 
         self.print(f"Done! Successfully deployed {image} as {service}.")
 
-    def _do_nginx_deploy(self, service, domain, force_wildcard=False):
+    def _do_nginx_deploy(self, service, domain, force_wildcard=False, force_provision=False):
         """Adds an nginx proxy from the ``domain`` to the ``service``
 
         :param service: the name of the service to point to
@@ -180,23 +180,23 @@ class DNA:
         out = utils.sh("nginx", "-s", "reload", stream=False)
         self.print(out)
 
-        if force_wildcard:
-            self.print("Installing a wildcard certificate...")
-        else:
-            self.print("Installing or provisioning certificate, as needed...")
+        self.print("Installing or provisioning certificate, as needed...")
         for _ in range(12):
             try:
                 cert = self.certbot.cert_else_false(domain, force_wildcard)
-                if cert:
+                if cert and not force_provision:
                     self.print(f"Found a matching certificate! Installing...")
-                    self.certbot.attach_cert(cert, domain, logfile=self.internal_logger.file())
+                    self.certbot.attach_cert(cert, domain, logger=self.print)
                 else:
-                    if force_wildcard:
-                        self.print("A wildcard certificate was forced but not found.")
-                        break
-                    self.print("Provisioning a new certificate...")
-                    self.certbot.run_bot([domain], logfile=self.internal_logger.file())
-            except utils.LockError:
+                    wildcard = force_provision and force_wildcard
+                    self.print(f"Provisioning a new {'wildcard' if wildcard else ''} certificate...")
+                    domains = [domain]
+                    if wildcard:
+                        domains.append(f"*.{domain}")
+                    self.certbot.run_bot(domains, logger=self.print)
+                break
+            except Exception as error:
+                self.print(error)
                 time.sleep(5)
                 continue
             

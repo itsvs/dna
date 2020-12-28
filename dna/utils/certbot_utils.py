@@ -5,6 +5,7 @@ from certbot._internal.main import make_or_verify_needed_dirs
 from certbot._internal.plugins import disco as plugins_disco
 from certbot.errors import LockError
 import zope.component, sys
+from dna.utils import sh
 
 
 class Certbot:
@@ -70,7 +71,7 @@ class Certbot:
                 found_wildcard = cert
         return found_wildcard
 
-    def attach_cert(self, cert, domain, logfile=sys.stdout):
+    def attach_cert(self, cert, domain, logger=print):
         """Install ``cert`` on ``domain``
 
         :param cert: the certificate to install
@@ -83,10 +84,10 @@ class Certbot:
         self.run_bot(
             [domain],
             ["install", "--cert-name", cert.live_dir.split("/")[-1]],
-            logfile=logfile,
+            logger=logger,
         )
 
-    def run_bot(self, domains=[], args=[], logfile=sys.stdout):
+    def run_bot(self, domains=[], args=[], logger=print):
         """Run a bot command on ``domains`` using ``args`` and the instance-wide ``args``
 
         :param domains: the domain names to pass to ``certbot``
@@ -100,7 +101,9 @@ class Certbot:
         for domain in domains:
             args.extend(["-d", domain])
         args.extend(self.args)
-        self._main(args, logfile)
+        out = sh("certbot", *args, stream=False)
+        logger(out)
+        # self._main(args, logfile)
 
     def _main(self, args, logfile):
         config = self._config(args)
