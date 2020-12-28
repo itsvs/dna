@@ -4,7 +4,7 @@
 
 ## v0.6.0
 
-*Unreleased*
+*December 28, 2020*
 
 ### NEW: Flask Integrations
 
