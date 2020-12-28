@@ -193,7 +193,15 @@ class DNA:
             if wildcard:
                 domains.append(f"*.{domain}")
             self.certbot.run_bot(domains, logger=self.print)
-        self.print(f"Done! Sucessfully proxied https://{domain} to {service}.")
+            if wildcard:
+                self.print("Installing wildcard certificate...")
+                cert = self.certbot.cert_else_false(f"*.{domain}", force_wildcard)
+                if cert:
+                    self.certbot.attach_cert(cert, domain, logger=self.print)
+                else:
+                    self.print("Something went wrong when provisioning/installing the wildcard certificate!")
+                    self.print(f"Couldn't secure {domain}.")
+        self.print(f"Done! Sucessfully proxied {domain} to {service}.")
         
 
     def _do_db_deploy(self, service, image, port):

@@ -103,7 +103,6 @@ class Certbot:
         for domain in domains:
             args.extend(["-d", domain])
         args.extend(self.args)
-        logger(f"Running certbot command: cerbot {' '.join(args)}.")
         out = self.sh("certbot", *args, stream=False)
         print(out, file=sys.stderr)
         # self._main(args, logfile)
