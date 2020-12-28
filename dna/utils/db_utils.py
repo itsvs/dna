@@ -71,6 +71,7 @@ class Service(Base):
 
 class ApiKey(Base):
     __tablename__ = "apikey"
+    id = Column(Integer, primary_key=True)
     key = Column(String)
     ip = Column(String)
     issued_at = Column(Integer)
