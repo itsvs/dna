@@ -57,7 +57,7 @@ def create_api_client(dna, precheck=lambda: False):
         image = data.get("image")
         tag = data.get("tag", None)
 
-        return Response(stream_with_context(dna.pull_image(image, tag, True)))
+        return Response(stream_with_context(dna.pull_image(image, tag, stream=True)))
     
     @api.route("/build_image", methods=["POST"])
     def build_image():
@@ -66,7 +66,7 @@ def create_api_client(dna, precheck=lambda: False):
         data = request.get_json()
         options = data.get("options")
 
-        return Response(stream_with_context(dna.pull_image(True, **options)))
+        return Response(stream_with_context(dna.build_image(stream=True, **options)))
     
     @api.route("/run_deploy", methods=["POST"])
     def run_deploy():
