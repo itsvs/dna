@@ -23,7 +23,7 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
             abort(403)
         key = dna.db.new_api_key(
             os.urandom(24).hex(),
-            request.get("HTTP_X_FORWARDED_FOR", "0.0.0.0"),
+            request.environ.get("HTTP_X_FORWARDED_FOR", "0.0.0.0"),
         )
 
         return jsonify(
@@ -41,7 +41,7 @@ def create_api_client(dna, app, base="/api/", precheck=lambda: False):
     
     def _check_api_key():
         key = request.headers.get("App-Key-DNA", "")
-        ip = request.get("HTTP_X_FORWARDED_FOR", "0.0.0.0")
+        ip = request.environ.get("HTTP_X_FORWARDED_FOR", "0.0.0.0")
         if not dna.db.check_api_key(key, ip):
             abort(403)
         return True
