@@ -1,4 +1,5 @@
 from functools import wraps
+import dna.utils.jinja as jinja
 import os
 
 def create_api_client(dna, precheck=None):
@@ -16,7 +17,7 @@ def create_api_client(dna, precheck=None):
         for execution to continue (good for things like authentication)
     :type precheck: func
     """
-    from flask import request, Response, stream_with_context, jsonify, abort, Blueprint, render_template, redirect, url_for
+    from flask import request, Response, stream_with_context, jsonify, abort, Blueprint, render_template_string, redirect, url_for
 
     api = Blueprint('dna_api', __name__)
 
@@ -31,13 +32,13 @@ def create_api_client(dna, precheck=None):
     @precheck
     def keys_index():
         keys = dna.db.get_active_keys()
-        return render_template("keys.html", keys=keys)
+        return render_template_string(jinja.JINJA_API_KEYS, keys=keys)
     
     @api.route("/manage_key")
     @precheck
     def manage_key():
         key = dna.db.get_key_info(request.args.get("key"))
-        return render_template("key.html", key=key)
+        return render_template_string(jinja.JINJA_API_KEY, key=key)
 
     @api.route("/new_key")
     @precheck

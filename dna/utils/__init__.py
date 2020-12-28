@@ -4,6 +4,7 @@ from dna.utils.docker_utils import Docker
 from dna.utils.nginx_utils import Nginx, Block
 from dna.utils.log_utils import Logger
 import dna.utils.flask_utils as flask
+import dna.utils.jinja_utils as jinja
 
 import subprocess
 
