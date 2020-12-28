@@ -120,7 +120,7 @@ def create_api_client(dna, precheck=lambda: False):
     
     return api
 
-def create_logs_client(dna, fallback=None, precheck=lambda: True):
+def create_logs_client(dna, fallback=None, precheck=lambda f: f):
     """Display logs at the given endpoint on the given Flask app
 
     Since logs are typically not sensitive, the ``precheck`` is permissive by
@@ -151,10 +151,8 @@ def create_logs_client(dna, fallback=None, precheck=lambda: True):
             }>{title}</a>"""
 
     @logs.route("/")
+    @precheck
     def logs_index():
-        if not precheck():
-            abort(403)
-
         content = _spcss("<h1>DNA Service Logs</h1>")
         content += "<p>See nginx and docker logs for all your running services! "
         content += "Note that custom log types are currently not listed.</p>"
@@ -170,16 +168,13 @@ def create_logs_client(dna, fallback=None, precheck=lambda: True):
         return content
     
     @logs.route("/dna")
+    @precheck
     def dnalog():
-        if not precheck():
-            abort(403)
         return "<br />".join(dna.dna_logs().split("\n"))
 
     @logs.route("/<service>/<log>")
+    @precheck
     def servlog(service, log):
-        if not precheck():
-            abort(403)
-
         service, service_name = dna.get_service_info(service), service
         if not service and fallback:
             return fallback(service_name, log)
