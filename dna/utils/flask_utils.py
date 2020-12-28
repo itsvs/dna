@@ -1,6 +1,6 @@
 from functools import wraps
 from dna.utils.jinja_utils import *
-import os
+import os, datetime
 
 def create_api_client(dna, precheck=None):
     """Expose DNA functions at the given endpoint on the given Flask app
@@ -20,6 +20,12 @@ def create_api_client(dna, precheck=None):
     from flask import request, Response, stream_with_context, jsonify, abort, Blueprint, render_template_string, redirect, url_for
 
     api = Blueprint('dna_api', __name__)
+
+    @api.app_template_filter("dt")
+    def format_dt(value, format="%b %d, %Y at %I:%M %p"):
+        if value is None:
+            return "no date provided"
+        return datetime.datetime.fromtimestamp(value).strftime(format)
 
     if not precheck:
         def precheck(func):
