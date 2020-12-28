@@ -60,13 +60,15 @@ class Certbot:
             is one, otherwise ``False``
         """
         domains = [domain, ".".join(["*"] + domain.split(".")[1:])]
+        found_wildcard = False
         if force_wildcard:
             domains = domains[1:]
         for cert in self._cert_iter():
-            for d in domains:
-                if d in cert.names():
-                    return cert
-        return False
+            if domains[0] in cert.names():
+                return cert
+            if domains[-1] in cert.names():
+                found_wildcard = cert
+        return found_wildcard
 
     def attach_cert(self, cert, domain, logfile=sys.stdout):
         """Install ``cert`` on ``domain``

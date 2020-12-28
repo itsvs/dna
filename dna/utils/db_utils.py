@@ -136,6 +136,19 @@ class SQLite:
         self.s.commit()
         return True
 
+    def remove_domain_from_service(self, domain, service):
+        if isinstance(service, str):
+            service = self.get_service_by_name(service)
+        if isinstance(domain, str):
+            domain = self.get_domain_by_url(domain)
+
+        if not domain or not domain.service_name == service.name:
+            return False
+
+        service.domains.remove(domain)
+        self.s.commit()
+        return True
+
     def delete_service(self, service):
         """Remove all records related to ``service``, including
         the associated :class:`~dna.utils.Service` object and any

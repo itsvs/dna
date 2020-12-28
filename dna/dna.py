@@ -289,7 +289,20 @@ class DNA:
         """
         if self.db.add_domain_to_service(domain, service):
             self._do_nginx_deploy(service, domain, force_wildcard)
-        self.propagate_services()
+            self.propagate_services()
+            return True
+        return False
+
+    def _do_nginx_delete(self, domain):
+        os.remove(f"{self.confs}/{domain}.conf")
+        out = utils.sh("nginx", "-s", "reload", stream=False)
+
+    def remove_domain(self, service, domain):
+        if self.db.remove_domain_from_service(domain, service):
+            self._do_nginx_delete(domain)
+            self.propagate_services()
+            return True
+        return False
 
     def delete_service(self, service):
         """Unproxy all domains attached to ``service``, unbind ``service`` from socat,
