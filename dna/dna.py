@@ -154,7 +154,7 @@ class DNA:
 
         self.print(f"Done! Successfully deployed {image} as {service}.")
 
-    def _do_nginx_deploy(self, service, domain, force_wildcard=False):
+    def _do_nginx_deploy(self, service, domain, force_wildcard=False, force_provision=False):
         """Adds an nginx proxy from the ``domain`` to the ``service``
 
         :param service: the name of the service to point to
@@ -164,10 +164,17 @@ class DNA:
         :param force_wildcard: forcibly use a wildcard SSL certificate only\
             (defaults to ``False``)
         :type force_wildcard: bool
+        :param force_provision: forcibly provision a certificate even if\
+            another match exists (defaults to ``False``)
+        :type force_provision: bool
+
+        Note that if ``force_wildcard`` and ``force_provision`` are both ``True``,\
+            then a certificate will be provisioned for ``domain`` as well as ``*.domain``.
         """
         self.print("Doing nginx deploy...")
         if os.path.exists(f"{self.confs}/{domain}.conf"):
             self.print(f"An nginx config for {domain} already exists!")
+            self.print("Nothing to do.")
             return
 
         socket = f"{self.socks}/{service}.sock"
@@ -180,30 +187,27 @@ class DNA:
         out = utils.sh("nginx", "-s", "reload", stream=False)
         self.print(out)
 
-        if force_wildcard:
-            self.print("Installing a wildcard certificate...")
+        self.print("Installing or provisioning certificate, as needed...")
+        cert = self.certbot.cert_else_false(domain, force_wildcard)
+        if cert and not force_provision:
+            self.print(f"Found a matching certificate! Installing...")
+            self.certbot.attach_cert(cert, domain, logger=self.print)
         else:
-            self.print("Installing or provisioning certificate, as needed...")
-        for _ in range(12):
-            try:
-                cert = self.certbot.cert_else_false(domain, force_wildcard)
+            wildcard = force_provision and force_wildcard
+            self.print(f"Provisioning a new {'wildcard' if wildcard else ''} certificate...")
+            domains = [domain]
+            if wildcard:
+                domains.append(f"*.{domain}")
+            self.certbot.run_bot(domains, logger=self.print)
+            if wildcard:
+                self.print("Installing wildcard certificate...")
+                cert = self.certbot.cert_else_false(f"*.{domain}", force_wildcard)
                 if cert:
-                    self.print(f"Found a matching certificate! Installing...")
-                    self.certbot.attach_cert(cert, domain, logfile=self.internal_logger.file())
+                    self.certbot.attach_cert(cert, domain, logger=self.print)
                 else:
-                    if force_wildcard:
-                        self.print("A wildcard certificate was forced but not found.")
-                        break
-                    self.print("Provisioning a new certificate...")
-                    self.certbot.run_bot([domain], logfile=self.internal_logger.file())
-            except utils.LockError:
-                time.sleep(5)
-                continue
-            
-            self.print(f"Done! Sucessfully proxied https://{domain} to {service}.")
-            return
-        self.print(f"Failed to secure {domain}.")
-        self.print(f"Done! Sucessfully proxied http://{domain} to {service}.")
+                    self.print("Something went wrong when provisioning/installing the wildcard certificate!")
+                    self.print(f"Couldn't secure {domain}.")
+        self.print(f"Done! Sucessfully proxied {domain} to {service}.")
         
 
     def _do_db_deploy(self, service, image, port):
@@ -276,7 +280,7 @@ class DNA:
         """
         return self.db.get_service_by_name(service)
 
-    def add_domain(self, service, domain, force_wildcard=False):
+    def add_domain(self, service, domain, force_wildcard=False, force_provision=False):
         """Proxy ``domain`` to ``service``, if it is not already bound to another service
 
         :param service: the name of the service
@@ -286,10 +290,35 @@ class DNA:
         :param force_wildcard: forcibly use a wildcard SSL certificate only\
             (defaults to ``False``)
         :type force_wildcard: bool
+        :param force_provision: forcibly provision a certificate even if\
+            another match exists (defaults to ``False``)
+        :type force_provision: bool
+
+        Note that if ``force_wildcard`` and ``force_provision`` are both ``True``,\
+            then a certificate will be provisioned for ``domain`` as well as ``*.domain``.
         """
         if self.db.add_domain_to_service(domain, service):
-            self._do_nginx_deploy(service, domain, force_wildcard)
-        self.propagate_services()
+            self._do_nginx_deploy(service, domain, force_wildcard, force_provision)
+            self.propagate_services()
+            return True
+        return False
+
+    def remove_domain(self, service, domain):
+        """Remove ``domain`` from ``service``, if it is bound to it
+
+        Note that relevant nginx configs will be deleted, but not certbot certificates.
+
+        :param service: the name of the service
+        :type service: str
+        :param domain: the url to unbind from the service
+        :type domain: str
+        """
+        if self.db.remove_domain_from_service(domain, service):
+            os.remove(f"{self.confs}/{domain}.conf")
+            out = utils.sh("nginx", "-s", "reload", stream=False)
+            self.propagate_services()
+            return True
+        return False
 
     def delete_service(self, service):
         """Unproxy all domains attached to ``service``, unbind ``service`` from socat,
@@ -306,7 +335,7 @@ class DNA:
 
         for domain in service.domains:
             os.remove(f"{self.confs}/{domain.url}.conf")
-        out = subprocess.run(["nginx", "-s", "reload"], capture_output=True)
+        out = utils.sh("nginx", "-s", "reload", stream=False)
         self.print(out.stdout)
 
         self.socat.unbind(service.name, service.port)
@@ -350,81 +379,11 @@ class DNA:
         with open(self.logs + "/dna.log") as f:
             return f.read()
 
-    def attach_logs_to_flask(self, app, endpoint, fallback=None, precheck=None):
-        """Display logs at the given endpoint on the given Flask app
+    def create_api_client(self, precheck=None):
+        """See :class:`~dna.utils.create_api_client`"""
+        return utils.create_api_client(self, precheck)
 
-        :param app: the Flask app to forward logs to
-        :type app: :class:`~flask.Flask`
-        :param endpoint: the base endpoint for logs
-        :type endpoint: str
-        :param fallback: an optional fallback function if DNA can't handle logs\
-            such as if you want to display a type of logs that DNA isn't familiar\
-            with (ex. image build logs)
-        :type fallback: func
-        :param precheck: an optional precursor function that must return ``True``\
-            for execution to continue (good for things like authentication)
-        :type precheck: func
-        """
-        from flask import abort, url_for
-
-        if not endpoint.startswith("/"):
-            endpoint = "/" + endpoint
-        if not endpoint.endswith("/"):
-            endpoint = endpoint + "/"
-
-        def _spcss(content=""):
-            return '<link rel="stylesheet" href="https://unpkg.com/spcss">\n' + content
+    def create_logs_client(self, fallback=None, precheck=lambda f: f):
+        """See :class:`~dna.utils.create_logs_client`"""
+        return utils.create_logs_client(self, fallback, precheck)
         
-        def _link(service, log, title):
-            return f"""<a href={
-                    url_for("attach_servlog", service=service.name, log=log)
-                }>{title}</a>"""
-
-        @app.route(endpoint + "dna")
-        def attach_dna():
-            if precheck and not precheck():
-                abort(403)
-            return "<br />".join(self.dna_logs().split("\n"))
-
-        @app.route(endpoint)
-        def logs_index():
-            if precheck and not precheck():
-                abort(403)
-
-            content = _spcss("<h1>DNA Service Logs</h1>")
-            content += "<p>See nginx and docker logs for all your running services! "
-            content += "Note that custom log types are currently not listed.</p>"
-            content += f'<a href={url_for("attach_dna")}>View Internal DNA Logs</a>'
-
-            for service in self.services:
-                content += "<h3>" + service.name + "</h3>\n<ul>\n"
-                content += f'<li>{_link(service, "nginx", "Nginx Access")}</li>\n'
-                content += f'<li>{_link(service, "error", "Nginx Errors")}</li>\n'
-                content += f'<li>{_link(service, "docker", "Container")}</li>\n'
-                content += "</ul>\n"
-
-            return content
-
-        @app.route(endpoint + "<service>/<log>")
-        def attach_servlog(service, log):
-            if precheck and not precheck():
-                abort(403)
-
-            service, service_name = self.get_service_info(service), service
-            if not service and fallback:
-                return fallback(service_name, log)
-            if not service:
-                abort(404)
-
-            if log == "nginx":
-                return "<br />".join(self.nginx_logs(service.name).split("\n"))
-            if log == "error":
-                return "<br />".join(
-                    self.nginx_logs(service.name, error=True).split("\n")
-                )
-            if log == "docker":
-                return "<br />".join(self.docker_logs(service.name).split("\n"))
-
-            if fallback:
-                return fallback(service.name, log)
-            abort(404)

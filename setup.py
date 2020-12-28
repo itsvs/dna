@@ -7,7 +7,7 @@ description = "Collection of utilities that simplify the process of deploying we
 
 setup(
     name="docker-dna",
-    version="0.5.1",
+    version="0.6.0",
     author="Vanshaj Singhania",
     author_email="vanshaj@berkeley.edu",
     description=description,

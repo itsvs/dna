@@ -1,6 +1,7 @@
-from sqlalchemy import Column, String, ForeignKey, create_engine
+from sqlalchemy import Column, String, Integer, ForeignKey, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, relationship, backref
+import time
 
 Base = declarative_base()
 
@@ -54,6 +55,49 @@ class Service(Base):
         for d in self.domains:
             res += f", {d.url}"
         return res + ")"
+    
+    def to_json(self):
+        """Represent this Service as a JSON dictionary
+
+        :return: a dictionary containing the name, image, port, and domains\
+            associated with this Service
+        """
+        return {
+            "name": self.name,
+            "image": self.image,
+            "port": self.port,
+            "domains": [
+                    d.url for d in self.domains
+            ],
+        }
+
+
+class ApiKey(Base):
+    """Represents an API Key, for the optional Flask REST API utility
+
+    :param key: the randomly-generated API key
+    :type key: str
+    :param ip: the IP address that requested the key
+    :type ip: str
+    :param issued_at: the timestamp the key was issued at
+    :type issued_at: int
+    :param expires_in: the number of seconds this key is active
+    :type expires_in: int
+    """
+
+    __tablename__ = "apikey"
+    id = Column(Integer, primary_key=True)
+    key = Column(String)
+    ip = Column(String)
+    issued_at = Column(Integer)
+    expires_in = Column(Integer)
+
+    def is_expired(self):
+        """Check if this key is expired or will expire within 10 seconds
+
+        :return: ``True`` if expired, ``False`` otherwise
+        """
+        return self.issued_at + self.expires_in <= time.time() + 10
 
 
 class SQLite:
@@ -108,6 +152,29 @@ class SQLite:
             return domain.service == service
 
         service.domains.append(domain)
+        self.s.commit()
+        return True
+
+    def remove_domain_from_service(self, domain, service):
+        """Unbind ``domain`` from ``service`` if it is bound to it
+
+        :param domain: the (url of the) domain to unbind
+        :type domain: str or :class:`~dna.utils.Domain`
+        :param service: the (name of the) service to unbind from
+        :type service: str or :class:`~dna.utils.Service`
+
+        :return: a boolean representing whether ``domain`` was\
+            successfully unbound from ``service``
+        """
+        if isinstance(service, str):
+            service = self.get_service_by_name(service)
+        if isinstance(domain, str):
+            domain = self.get_domain_by_url(domain)
+
+        if not domain or not domain.service_name == service.name:
+            return False
+
+        service.domains.remove(domain)
         self.s.commit()
         return True
 
@@ -190,6 +257,72 @@ class SQLite:
         domain = Domain(url=url)
         self._add(domain)
         return domain
+    
+    def get_active_keys(self):
+        """Get all the active API Keys in this DNA instance
+
+        :return: a list of :class:`~dna.utils.ApiKey` objects
+        """
+        keys = self.s.query(ApiKey).all()
+        keys = [k for k in keys if not k.is_expired()]
+        return keys
+
+    def get_key_info(self, key):
+        """Get info for the API key represented by the given key
+
+        :param key: the key to query by
+        :type key: str
+
+        :return: the relevant :class:`~dna.utils.ApiKey` object if it exists, else ``None``
+        """
+        return self.s.query(ApiKey).filter(ApiKey.key == key).one_or_none()
+
+    def new_api_key(self, key, ip, expires_in=3600):
+        """Create a new API key
+
+        :param key: the randomly-generated key
+        :type key: str
+        :param ip: the IP address that requested the key
+        :type ip: str
+        :param expires_in: the number of seconds the key may be used (defaults to ``3600``)
+        :type expires_in: int
+
+        :return: the new :class:`~dna.utils.ApiKey` object
+        """
+        key_obj = ApiKey(key=key, ip=ip, issued_at=time.time(), expires_in=expires_in)
+        self._add(key_obj)
+        return key_obj
+    
+    def check_api_key(self, key, ip):
+        """Check whether the given IP can request the given key, if the key is valid
+
+        :param key: the key to query by and check
+        :type key: str
+        :param ip: the requesting IP address
+        :type ip: str
+
+        :return: ``True`` if the IP can call the key, ``False`` otherwise or if the key is invalid
+        """
+        get = self.s.query(ApiKey).filter(ApiKey.key == key).one_or_none()
+        if not get:
+            return False
+        return get.ip == ip and not get.is_expired()
+    
+    def revoke_api_key(self, key):
+        """Revoke the given key early
+
+        :param key: the key to query by and revoke
+        :type key: str
+
+        :return: ``True`` if successful, ``False`` otherwise
+        """
+        get = self.s.query(ApiKey).filter(ApiKey.key == key).one_or_none()
+        if not get:
+            return False
+        get.expires_in = 0
+        
+        self.s.commit()
+        return get.is_expired()
 
     def _add(self, obj):
         """Add and commit the specified object to the database

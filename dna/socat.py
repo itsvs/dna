@@ -1,6 +1,7 @@
-import subprocess, time, os
+import time, os
 from io import BytesIO
 from threading import Thread
+from dna.utils import sh
 
 
 class SocatHelper:
@@ -50,8 +51,8 @@ class SocatHelper:
         while not os.path.exists(path):
             time.sleep(1)
 
-        out = subprocess.run(["chmod", "666", path], capture_output=True)
-        self.dna.print(out.stdout)
+        out = sh("chmod", "666", path, stream=False)
+        self.dna.print(out)
 
         self.dna.print(f"Bound {service}:{port} to {service}.sock.")
 
