@@ -2,6 +2,12 @@
 
 <!-- skip title -->
 
+## v0.6.1
+
+*December 30, 2020*
+
+* Fix bug that caused a server error when deleting a service
+
 ## v0.6.0
 
 *December 28, 2020*

@@ -7,7 +7,7 @@ description = "Collection of utilities that simplify the process of deploying we
 
 setup(
     name="docker-dna",
-    version="0.6.0",
+    version="0.6.1",
     author="Vanshaj Singhania",
     author_email="vanshaj@berkeley.edu",
     description=description,
@@ -18,7 +18,7 @@ setup(
     packages=find_packages(include=["dna", "dna.utils"]),
     package_data={"": ["**/*.tex"]},
     include_package_data=True,
-    python_requires=">=3.8",
+    python_requires=">=3.7",
     install_requires=[
         "certbot==1.10.1",
         "certbot-nginx==1.10.1",

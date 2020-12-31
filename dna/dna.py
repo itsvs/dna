@@ -336,7 +336,7 @@ class DNA:
         for domain in service.domains:
             os.remove(f"{self.confs}/{domain.url}.conf")
         out = utils.sh("nginx", "-s", "reload", stream=False)
-        self.print(out.stdout)
+        self.print(out)
 
         self.socat.unbind(service.name, service.port)
         self.docker.wipe_container(service.name)
