@@ -142,7 +142,7 @@ def create_api_client(dna, precheck=None):
         return jsonify(success=dna.remove_domain(service, domain))
 
     @api.route("/stop_service", methods=["POST"])
-    def start_service():
+    def stop_service():
         _check_key()
         data = request.get_json()
         service = data.get("service")

@@ -2,6 +2,12 @@
 
 <!-- skip title -->
 
+## v0.6.3
+
+*December 30, 2020*
+
+* Revise stop_service API
+
 ## v0.6.2
 
 *December 30, 2020*
