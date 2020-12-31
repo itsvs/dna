@@ -155,6 +155,36 @@ class Docker:
         """
         return self.client.containers.run(img, name=name, **options)
 
+    def start_container(self, name):
+        """Start the requested container, if it is not running
+
+        :param name: the name of the container to start
+        :type name: str
+
+        :return: whether the container was started successfully
+        """
+        if self.container_exists(name):
+            con = self.client.containers.get(name)
+            if con.status == "exited":
+                con.start()
+                return True
+        return False
+
+    def stop_container(self, name):
+        """Stop the requested container, if it is not stopped
+
+        :param name: the name of the container to stop
+        :type name: str
+
+        :return: whether the container was stopped successfully
+        """
+        if self.container_exists(name):
+            con = self.client.containers.get(name)
+            if con.status != "exited":
+                con.kill()
+                return True
+        return False
+
     def wipe_container(self, name):
         """Kill and remove the container named ``name``, if needed,
         and return it if it existed

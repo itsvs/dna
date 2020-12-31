@@ -98,18 +98,26 @@ def create_api_client(dna, precheck=None):
         options = data.get("options")
 
         dna.run_deploy(service, image, port, **options)
-        return jsonify({"success": True})
+        return jsonify(success=True)
     
     @api.route("/propagate_services", methods=["POST"])
     def propagate_services():
         _check_key()
         dna.propagate_services()
-        return jsonify({"success": True})
+        return jsonify(success=True)
     
     @api.route("/get_service_info/<name>")
     def get_service_info(name):
         _check_key()
         return jsonify(dna.get_service_info(name).to_json())
+    
+    @api.route("/start_service", methods=["POST"])
+    def start_service():
+        _check_key()
+        data = request.get_json()
+        service = data.get("service")
+
+        return jsonify(success=dna.start_service(service))
     
     @api.route("/add_domain", methods=["POST"])
     def add_domain():
@@ -133,14 +141,22 @@ def create_api_client(dna, precheck=None):
 
         return jsonify(success=dna.remove_domain(service, domain))
 
-    @api.route("/delete_service", methods=["DELETE"])
+    @api.route("/stop_service", methods=["POST"])
+    def start_service():
+        _check_key()
+        data = request.get_json()
+        service = data.get("service")
+
+        return jsonify(success=dna.stop_service(service))
+
+    @api.route("/delete_service", methods=["POST"])
     def delete_service():
         _check_key()
         data = request.get_json()
         service = data.get("service")
 
         dna.delete_service(service)
-        return jsonify({"success": True})
+        return jsonify(success=True)
     
     return api
 

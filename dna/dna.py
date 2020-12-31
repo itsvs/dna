@@ -257,7 +257,11 @@ class DNA:
             instance
         
         For the names of all the docker containers connected to this\
-            service's socat bridge, calls :meth:`~dna.DNA.get_service_info`
+            service's socat bridge, calls :meth:`~dna.DNA.get_service_info`.
+        
+        .. warning:: If a service was deployed using DNA but the socat bridge\
+            does not yield it (the container is off or was deleted), the service\
+            will not be propagated.
         """
         dna = self.docker.get_network(self.socat.bridge, low_level=True)
         self.services = []
@@ -280,6 +284,22 @@ class DNA:
         """
         return self.db.get_service_by_name(service)
 
+    def start_service(self, service):
+        """Start the requested service, if it is stopped
+
+        :param service: the name of the service to start
+        :type service: str
+
+        :return: whether the service was started successfully
+        """
+        service = self.get_service_info(service)
+        if service:
+            if self.docker.start_container(service.name):
+                self.socat.bind(service.name, service.port)
+                self.propagate_services()
+                return True
+        return False
+
     def add_domain(self, service, domain, force_wildcard=False, force_provision=False):
         """Proxy ``domain`` to ``service``, if it is not already bound to another service
 
@@ -294,8 +314,8 @@ class DNA:
             another match exists (defaults to ``False``)
         :type force_provision: bool
 
-        Note that if ``force_wildcard`` and ``force_provision`` are both ``True``,\
-            then a certificate will be provisioned for ``domain`` as well as ``*.domain``.
+        .. important:: If ``force_wildcard`` and ``force_provision`` are both ``True``,\
+            then a certificate will be provisioned for ``domain`` as well as ``*.domain``
         """
         if self.db.add_domain_to_service(domain, service):
             self._do_nginx_deploy(service, domain, force_wildcard, force_provision)
@@ -306,18 +326,35 @@ class DNA:
     def remove_domain(self, service, domain):
         """Remove ``domain`` from ``service``, if it is bound to it
 
-        Note that relevant nginx configs will be deleted, but not certbot certificates.
-
         :param service: the name of the service
         :type service: str
         :param domain: the url to unbind from the service
         :type domain: str
+
+        .. note:: Relevant ``nginx`` configs will be deleted, but not\
+            ``certbot`` certificates.
         """
         if self.db.remove_domain_from_service(domain, service):
             os.remove(f"{self.confs}/{domain}.conf")
             out = utils.sh("nginx", "-s", "reload", stream=False)
             self.propagate_services()
             return True
+        return False
+
+    def stop_service(self, service):
+        """Stop the requested service, if it is not stopped
+
+        :param service: the name of the service to stop
+        :type service: str
+
+        :return: whether the service was stopped successfully
+        """
+        service = self.get_service_info(service)
+        if service:
+            if self.docker.stop_container(service.name):
+                self.socat.unbind(service.name, service.port)
+                self.propagate_services()
+                return True
         return False
 
     def delete_service(self, service):
@@ -328,7 +365,7 @@ class DNA:
         :param service: the name of the service
         :type service: str
         """
-        service = self.db.get_service_by_name(service)
+        service = self.get_service_info(service)
 
         if not service:
             return

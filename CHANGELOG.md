@@ -2,6 +2,13 @@
 
 <!-- skip title -->
 
+## v0.6.2
+
+*December 30, 2020*
+
+* Add ability to start and stop existing services
+* Clean up API endpoints
+
 ## v0.6.1
 
 *December 30, 2020*
