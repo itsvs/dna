@@ -4,6 +4,7 @@
 
 [![PyPI Badge](https://img.shields.io/pypi/v/docker-dna.svg?style=flat)](https://pypi.org/project/docker-dna)
 ![License Badge](https://img.shields.io/github/license/itsvs/dna?style=flat)
+![Checks Badge](https://img.shields.io/github/checks-status/itsvs/dna/master)
 
 See this project on [GitHub](https://github.com/itsvs/dna). Also available via
 [PyPI](https://pypi.org/project/docker-dna).
