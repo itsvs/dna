@@ -2,6 +2,12 @@
 
 <!-- skip title -->
 
+## v0.6.4
+
+*December 31, 2020*
+
+* Add `force_exact` option to Certbot utilities
+
 ## v0.6.3
 
 *December 30, 2020*
