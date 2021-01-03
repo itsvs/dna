@@ -54,10 +54,18 @@ class Location(Block):
 
     :param location: the location being proxied
     :type location: str
+    :param proxy_set_header: a dictionary of proxy\
+        headers to pass into nginx
+    :type proxy_set_header: dict
     """
 
-    def __init__(self, location, *sections, **options):
-        super().__init__(f"location {location}", *sections, **options)
+    def __init__(self, location, *sections, proxy_set_header={}, **options):
+        location = f"location {location}"
+        proxy_set_header = {
+            f"proxy_set_header {header}": value
+            for (header, value) in proxy_set_header.items()
+        }
+        super().__init__(location, *sections, **options, **proxy_set_header)
 
 
 class Nginx:
@@ -70,7 +78,7 @@ class Nginx:
     def __init__(self, default):
         self.default = default
 
-    def gen_config_with_port(self, domain, port, logs_pre="/var/log/nginx/"):
+    def gen_config_with_port(self, domain, port, logs_pre="/var/log/nginx/", proxy_set_header={}):
         """Generate an nginx config that proxies ``domain`` to ``port``
 
         :param domain: the domain to proxy
@@ -80,12 +88,15 @@ class Nginx:
         :param logs_pre: the location of logs for this proxy pass (defaults to\
             "/var/logs/nginx/")
         :type logs_pre: str
+        :param proxy_set_header: a dictionary of proxy headers to pass into\
+            nginx
+        :type proxy_set_header: dict
 
         :return: the generated nginx config, as a string
         """
-        return self.gen_config(domain, f"http://127.0.0.1:{port}", logs_pre)
+        return self.gen_config(domain, f"http://127.0.0.1:{port}", logs_pre, proxy_set_header)
 
-    def gen_config_with_sock(self, domain, sock, logs_pre="/var/log/nginx/"):
+    def gen_config_with_sock(self, domain, sock, logs_pre="/var/log/nginx/", proxy_set_header={}):
         """Generate an nginx config that proxies ``domain`` to ``sock``
 
         :param domain: the domain to proxy
@@ -95,12 +106,15 @@ class Nginx:
         :param logs_pre: the location of logs for this proxy pass (defaults to\
             "/var/logs/nginx/")
         :type logs_pre: str
+        :param proxy_set_header: a dictionary of proxy headers to pass into\
+            nginx
+        :type proxy_set_header: dict
 
         :return: the generated nginx config, as a string
         """
-        return self.gen_config(domain, f"http://unix:{sock}", logs_pre)
+        return self.gen_config(domain, f"http://unix:{sock}", logs_pre, proxy_set_header)
 
-    def gen_config(self, domain, proxy_pass, logs_pre):
+    def gen_config(self, domain, proxy_pass, logs_pre, proxy_set_header={}):
         """Generate an nginx config that proxies ``domain`` to ``proxy_pass``
 
         If ``domain`` is a top-level domain, we include `www.domain``. If
@@ -112,6 +126,9 @@ class Nginx:
         :type proxy_pass: str
         :param logs_pre: the location of logs for this proxy pass
         :type logs_pre: str
+        :param proxy_set_header: a dictionary of proxy headers to pass into\
+            nginx
+        :type proxy_set_header: dict
 
         :return: the generated nginx config, as a string
         """
@@ -128,6 +145,7 @@ class Nginx:
                 "/",
                 include="proxy_params",
                 proxy_pass=proxy_pass,
+                proxy_set_header=proxy_set_header,
             ),
             server_name=server_name,
             listen="80",

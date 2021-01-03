@@ -154,7 +154,7 @@ class DNA:
 
         self.print(f"Done! Successfully deployed {image} as {service}.")
 
-    def _do_nginx_deploy(self, service, domain, force_wildcard=False, force_provision=False):
+    def _do_nginx_deploy(self, service, domain, force_wildcard=False, force_provision=False, proxy_set_header={}):
         """Adds an nginx proxy from the ``domain`` to the ``service``
 
         :param service: the name of the service to point to
@@ -167,6 +167,9 @@ class DNA:
         :param force_provision: forcibly provision a certificate even if\
             another match exists (defaults to ``False``)
         :type force_provision: bool
+        :param proxy_set_header: a dictionary of proxy headers to pass into\
+            nginx
+        :type proxy_set_header: dict
 
         Note that if ``force_wildcard`` and ``force_provision`` are both ``True``,\
             then a certificate will be provisioned for ``domain`` as well as ``*.domain``.
@@ -181,7 +184,7 @@ class DNA:
         with open(f"{self.confs}/{domain}.conf", "w") as out:
             out.write(
                 self.nginx.gen_config_with_sock(
-                    domain, socket, logs_pre=f"{self.logs}/{service}-"
+                    domain, socket, logs_pre=f"{self.logs}/{service}-", proxy_set_header=proxy_set_header,
                 )
             )
         out = utils.sh("nginx", "-s", "reload", stream=False)
@@ -300,7 +303,7 @@ class DNA:
                 return True
         return False
 
-    def add_domain(self, service, domain, force_wildcard=False, force_provision=False):
+    def add_domain(self, service, domain, force_wildcard=False, force_provision=False, proxy_set_header={}):
         """Proxy ``domain`` to ``service``, if it is not already bound to another service
 
         :param service: the name of the service
@@ -313,12 +316,15 @@ class DNA:
         :param force_provision: forcibly provision a certificate even if\
             another match exists (defaults to ``False``)
         :type force_provision: bool
+        :param proxy_set_header: a dictionary of proxy headers to pass into\
+            nginx
+        :type proxy_set_header: dict
 
         .. important:: If ``force_wildcard`` and ``force_provision`` are both ``True``,\
             then a certificate will be provisioned for ``domain`` as well as ``*.domain``
         """
         if self.db.add_domain_to_service(domain, service):
-            self._do_nginx_deploy(service, domain, force_wildcard, force_provision)
+            self._do_nginx_deploy(service, domain, force_wildcard, force_provision, proxy_set_header)
             self.propagate_services()
             return True
         return False

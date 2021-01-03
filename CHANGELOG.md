@@ -2,6 +2,13 @@
 
 <!-- skip title -->
 
+## v0.6.5
+
+*January 2, 2021*
+
+* Happy New Year!
+* Add support for `proxy_set_header` statements
+
 ## v0.6.4
 
 *December 31, 2020*
