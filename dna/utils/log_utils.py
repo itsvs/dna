@@ -1,6 +1,28 @@
 from datetime import datetime as dt
-import os
+import os, logging
 
+for level in range(10, 51, 10):
+    logging.addLevelName(
+        level,
+        logging.getLevelName(level).lower(),
+    )
+
+fmt = logging.Formatter(
+    '[%(asctime)s.%(msecs)03d] [%(name)s - %(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+)
+
+def get_logger(name):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    if logger.hasHandlers():
+        handler = logger.handlers[0]
+    else:
+        handler = logging.FileHandler(f'{name}.log')
+        handler.setLevel(logging.INFO)
+    handler.setFormatter(fmt)
+    logger.addHandler(handler)
+    return logger
 
 class Logger:
     """Various utilities to interface with logs
